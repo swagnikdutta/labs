@@ -95,6 +95,25 @@ func TestStoreWins(t *testing.T) {
 	})
 }
 
+// This is an integration test — testing the real store, not a stub
+func TestRecordingWinsAndRetrievingThem(t *testing.T) {
+	store := NewInMemoryPlayerStore()
+
+	// binding the real store and the server
+	server := PlayerServer{store}
+	player := "Pepper"
+
+	// record 3 wins
+	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
+	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
+
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, newGetScoreRequest(player))
+	assertStatus(t, response.Code, http.StatusOK)
+	assertResponseBody(t, response.Body.String(), "3")
+}
+
 func newPostWinRequest(name string) *http.Request {
 	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/players/%s", name), nil)
 	return req
